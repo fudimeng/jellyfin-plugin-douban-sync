@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>豆瓣同步</title>
+    <style>
+        #doubanSyncConfigurationPage .doubanSyncContent {
+            max-width: 72rem;
+        }
+
+        #doubanSyncConfigurationPage #cookie {
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 16rem;
+            resize: vertical;
+            overflow-wrap: anywhere;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 40rem) {
+            #doubanSyncConfigurationPage #cookie {
+                min-height: 12rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="doubanSyncConfigurationPage"
+         data-role="page"
+         class="page type-interior pluginConfigurationPage"
+        data-controller="__plugin/douban-sync-js">
+        <div data-role="content">
+            <div class="content-primary doubanSyncContent">
+                <h1>豆瓣同步</h1>
+                <p class="fieldDescription">
+                    插件每 30 分钟扫描一次 Jellyfin 已观看电影，以及全部普通集均已看完的电视剧或动画季，再提交豆瓣“看过”。特别篇不计入季完成度。Cookie 仅在服务端接收并加密保存，页面不会回显。
+                </p>
+
+                <form id="doubanSyncSettingsForm">
+                    <h2>同步设置</h2>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="enabled" type="checkbox" is="emby-checkbox">
+                            <span>启用每 30 分钟同步</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">关闭后计划任务仍保留，但扫描时不会加入任何影视条目。</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="markPrivate" type="checkbox" is="emby-checkbox">
+                            <span>在豆瓣设为仅自己可见</span>
+                        </label>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="shareToBroadcast" type="checkbox" is="emby-checkbox">
+                            <span>分享到我的豆瓣广播</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">仅新标记“看过”时发布；豆瓣已经看过的条目不会更新或重复广播。</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="requestIntervalSeconds">豆瓣请求最小间隔（秒）</label>
+                        <input id="requestIntervalSeconds" type="number" min="3" max="60" is="emby-input">
+                        <div class="fieldDescription">建议保持 5 秒或更高，降低触发豆瓣安全验证的概率。</div>
+                    </div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>保存设置</span>
+                    </button>
+                </form>
+
+                <form id="doubanSyncCookieForm">
+                    <h2 style="margin-top:2em">Cookie 导入</h2>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="jellyfinUser">Jellyfin 用户</label>
+                        <select id="jellyfinUser" is="emby-select"></select>
+                    </div>
+                    <div id="credentialStatus" class="fieldDescription"></div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="cookie">浏览器 Cookie 请求头</label>
+                        <textarea id="cookie"
+                                  rows="12"
+                                  is="emby-input"
+                                  autocomplete="off"
+                                  spellcheck="false"
+                                  wrap="soft"
+                                  placeholder="bid=...; dbcl2=...; ck=..."></textarea>
+                        <div class="fieldDescription">
+                            在已登录豆瓣的浏览器开发者工具中打开 movie.douban.com 请求，复制 Request Headers 里的完整 Cookie 值。
+                            导入时会立即验证；至少需要 dbcl2 和 ck。输入框可以拖动右下角继续放大。
+                        </div>
+                    </div>
+                    <button id="saveCookie" is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>验证并保存 Cookie</span>
+                    </button>
+                    <button id="deleteCookie" is="emby-button" type="button" class="raised block emby-button">
+                        <span>删除该用户 Cookie</span>
+                    </button>
+                    <button id="retryFailures" is="emby-button" type="button" class="raised block emby-button">
+                        <span>重试该用户失败项目</span>
+                    </button>
+                </form>
+
+                <section style="margin-top:2em">
+                    <h2>同步状态</h2>
+                    <p id="pendingCount" class="fieldDescription"></p>
+                    <button id="refreshState" is="emby-button" type="button" class="raised emby-button">
+                        <span>刷新</span>
+                    </button>
+                    <div id="recentResults" style="margin-top:1em"></div>
+                    <p class="fieldDescription">
+                        周期任务也可在 Jellyfin 控制台 → 计划任务中手动运行或调整触发器。
+                    </p>
+                </section>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

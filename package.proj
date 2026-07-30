@@ -1,0 +1,28 @@
+<Project>
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">0.1.6</PackageVersion>
+    <PluginVersion Condition="'$(PluginVersion)' == ''">$(PackageVersion).0</PluginVersion>
+    <JellyfinVersion>10.11.11</JellyfinVersion>
+    <PackageDirectory>$(MSBuildThisFileDirectory)artifacts</PackageDirectory>
+    <StagingDirectory>$(PackageDirectory)/staging</StagingDirectory>
+    <PackagePath>$(PackageDirectory)/douban-sync_$(PackageVersion)_jellyfin-$(JellyfinVersion).zip</PackagePath>
+    <PluginOutput>$(MSBuildThisFileDirectory)Jellyfin.Plugin.DoubanSync/bin/$(Configuration)/net9.0/Jellyfin.Plugin.DoubanSync.dll</PluginOutput>
+  </PropertyGroup>
+
+  <Target Name="Package">
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)Jellyfin.Plugin.DoubanSync/Jellyfin.Plugin.DoubanSync.csproj"
+      Targets="Build"
+      Properties="Configuration=$(Configuration);JellyfinVersion=$(JellyfinVersion);Version=$(PluginVersion);AssemblyVersion=$(PluginVersion);FileVersion=$(PluginVersion)" />
+    <RemoveDir Directories="$(StagingDirectory)" />
+    <MakeDir Directories="$(StagingDirectory)" />
+    <Copy SourceFiles="$(PluginOutput)" DestinationFolder="$(StagingDirectory)" />
+    <ZipDirectory
+      SourceDirectory="$(StagingDirectory)"
+      DestinationFile="$(PackagePath)"
+      Overwrite="true" />
+    <RemoveDir Directories="$(StagingDirectory)" />
+    <Message Text="Created $(PackagePath)" Importance="high" />
+  </Target>
+</Project>

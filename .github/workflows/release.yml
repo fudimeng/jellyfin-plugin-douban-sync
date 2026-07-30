@@ -1,0 +1,73 @@
+name: Release Jellyfin plugin
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Read and validate version
+        id: release
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must use vX.Y.Z format." >&2
+            exit 2
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies
+        run: dotnet restore DoubanSync.sln
+
+      - name: Run tests
+        run: dotnet test DoubanSync.sln --configuration Release --no-restore
+
+      - name: Build release package
+        run: >-
+          dotnet msbuild package.proj
+          -t:Package
+          -p:PackageVersion=${{ steps.release.outputs.version }}
+          -p:PluginVersion=${{ steps.release.outputs.version }}.0
+
+      - name: Generate Jellyfin repository manifest
+        shell: bash
+        run: |
+          zip_path="artifacts/douban-sync_${{ steps.release.outputs.version }}_jellyfin-10.11.11.zip"
+          bash scripts/generate-release-manifest.sh \
+            "${{ steps.release.outputs.version }}" \
+            "$GITHUB_REF_NAME" \
+            "$GITHUB_REPOSITORY" \
+            "$zip_path" \
+            "artifacts/manifest.json"
+          unzip -t "$zip_path"
+          jq empty artifacts/manifest.json
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          zip_path="artifacts/douban-sync_${VERSION}_jellyfin-10.11.11.zip"
+          gh release create "$GITHUB_REF_NAME" \
+            "$zip_path" \
+            "artifacts/manifest.json" \
+            --generate-notes \
+            --title "Douban Sync ${VERSION}" \
+            --verify-tag

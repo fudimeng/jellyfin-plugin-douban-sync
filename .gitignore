@@ -1,0 +1,29 @@
+# .NET build and test output
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+coverage/
+coverage.*
+*.trx
+
+# Local package and IDE state
+.nuget/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Local environment and private key material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db

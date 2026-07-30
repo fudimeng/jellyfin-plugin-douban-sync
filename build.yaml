@@ -1,0 +1,24 @@
+name: "Douban Sync"
+guid: "58f521f4-ff96-4ac4-b6ac-14fdc730659a"
+version: 7
+targetAbi: "10.11.11.0"
+framework: "net9.0"
+owner: "doubanSyn contributors"
+overview: "Sync watched Jellyfin movies and completed seasons to Douban."
+description: >
+  Marks movies and fully watched television or animation seasons as watched on Douban.
+  Uses an encrypted browser Cookie imported per Jellyfin user.
+category: "General"
+artifacts:
+  - "Jellyfin.Plugin.DoubanSync.dll"
+changelog: |-
+  - Enlarge the Cookie editor and make it responsive, resizable, and easier to read.
+  - Add television and animation season synchronization after every regular episode is watched.
+  - Exclude specials and incomplete seasons from synchronization.
+  - Match multi-season shows by exact series title, season number, and year to prevent cross-season mistakes.
+  - Resolve missing Douban IDs through a verified exact IMDb search before title matching.
+  - Skip the write request when Douban already reports the movie as watched.
+  - Add an option to share watched marks to the user's Douban broadcast.
+  - Replace real-time event synchronization with a 30-minute scheduled scan.
+  - Persist completed and suppressed keys to avoid repeated writes every cycle.
+  - Persistent queue, throttling, retry, and status page.
