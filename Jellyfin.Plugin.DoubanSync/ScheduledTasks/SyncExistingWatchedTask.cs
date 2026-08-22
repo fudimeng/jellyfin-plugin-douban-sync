@@ -121,17 +121,15 @@ public sealed partial class SyncExistingWatchedTask : IScheduledTask
                 .OfType<Season>()
                 .Where(season => season.IndexNumber.GetValueOrDefault() > 0)
                 .ToArray();
-            var episodesBySeason = _libraryManager.GetItemList(
+            var episodesBySeason = GroupEpisodesBySeason(
+                _libraryManager.GetItemList(
                     new InternalItemsQuery(user)
                     {
                         IncludeItemTypes = [BaseItemKind.Episode],
                         IsVirtualItem = false,
                         Recursive = true
                     })
-                .OfType<Episode>()
-                .Where(episode => episode.ParentIndexNumber.GetValueOrDefault() > 0)
-                .GroupBy(episode => episode.ParentId)
-                .ToDictionary(group => group.Key, group => group.ToArray());
+                .OfType<Episode>());
             var regularSeasonCounts = seasons
                 .Where(season => season.Series is not null)
                 .GroupBy(season => season.Series.Id)
@@ -181,6 +179,22 @@ public sealed partial class SyncExistingWatchedTask : IScheduledTask
     {
         var states = playedStates.ToArray();
         return states.Length > 0 && states.All(played => played);
+    }
+
+    /// <summary>
+    /// Groups regular episodes by their owning season.
+    /// </summary>
+    /// <param name="episodes">Physical Jellyfin episodes.</param>
+    /// <returns>Episodes keyed by Jellyfin season identifier.</returns>
+    internal static IReadOnlyDictionary<Guid, Episode[]> GroupEpisodesBySeason(
+        IEnumerable<Episode> episodes)
+    {
+        return episodes
+            .Where(
+                episode => episode.ParentIndexNumber.GetValueOrDefault() > 0
+                    && episode.SeasonId != Guid.Empty)
+            .GroupBy(episode => episode.SeasonId)
+            .ToDictionary(group => group.Key, group => group.ToArray());
     }
 
     [LoggerMessage(

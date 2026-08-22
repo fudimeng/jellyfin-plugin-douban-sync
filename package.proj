@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
-    <PackageVersion Condition="'$(PackageVersion)' == ''">0.1.6</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">0.1.7</PackageVersion>
     <PluginVersion Condition="'$(PluginVersion)' == ''">$(PackageVersion).0</PluginVersion>
     <JellyfinVersion>10.11.11</JellyfinVersion>
     <PackageDirectory>$(MSBuildThisFileDirectory)artifacts</PackageDirectory>

@@ -147,8 +147,8 @@ dotnet msbuild package.proj -t:Package
 更新版本号和变更说明后，推送符合 `vX.Y.Z` 格式的标签：
 
 ```bash
-git tag v0.1.6
-git push origin v0.1.6
+git tag v0.1.7
+git push origin v0.1.7
 ```
 
 GitHub Actions 会自动：
