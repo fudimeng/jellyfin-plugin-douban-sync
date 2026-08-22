@@ -144,7 +144,7 @@ dotnet msbuild package.proj -t:Package
 
 ## 发布新版本
 
-更新版本号和变更说明后，推送符合 `vX.Y.Z` 格式的标签：
+更新版本号，并在 `.github/release-notes/` 中添加与标签同名的中文版本说明后，推送符合 `vX.Y.Z` 格式的标签：
 
 ```bash
 git tag v0.1.7
@@ -156,8 +156,8 @@ GitHub Actions 会自动：
 1. 还原依赖并运行测试。
 2. 构建版本匹配的插件 ZIP。
 3. 计算 Jellyfin 插件仓库所需的校验值。
-4. 生成 `manifest.json`。
-5. 创建 GitHub Release 并上传 ZIP 与 manifest。
+4. 将该版本的产品变更说明写入 `manifest.json`。
+5. 使用同一份变更说明创建 GitHub Release，并上传 ZIP 与 manifest。
 
 ## 限制与风险
 

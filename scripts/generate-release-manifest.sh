@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [[ $# -ne 5 ]]; then
-    echo "Usage: $0 <version> <tag> <repository> <zip-path> <output-path>" >&2
+if [[ $# -ne 6 ]]; then
+    echo "Usage: $0 <version> <tag> <repository> <zip-path> <output-path> <release-notes-path>" >&2
     exit 2
 fi
 
@@ -12,6 +12,7 @@ tag=$2
 repository=$3
 zip_path=$4
 output_path=$5
+release_notes_path=$6
 
 if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo "Version must use X.Y.Z format." >&2
@@ -33,10 +34,16 @@ if [[ ! -f $zip_path ]]; then
     exit 2
 fi
 
+if [[ ! -s $release_notes_path ]]; then
+    echo "Release notes not found or empty: $release_notes_path" >&2
+    exit 2
+fi
+
 zip_name=$(basename "$zip_path")
 checksum=$(md5sum "$zip_path" | awk '{print $1}')
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 source_url="https://github.com/${repository}/releases/download/${tag}/${zip_name}"
+changelog=$(<"$release_notes_path")
 output_directory=$(dirname "$output_path")
 mkdir -p "$output_directory"
 temporary_path=$(mktemp "${output_directory}/manifest.XXXXXX")
@@ -47,6 +54,7 @@ jq -n \
     --arg source_url "$source_url" \
     --arg checksum "$checksum" \
     --arg timestamp "$timestamp" \
+    --arg changelog "$changelog" \
     '[
       {
         guid: "58f521f4-ff96-4ac4-b6ac-14fdc730659a",
@@ -58,7 +66,7 @@ jq -n \
         versions: [
           {
             version: $version,
-            changelog: "查看 GitHub Release 获取完整更新说明。",
+            changelog: $changelog,
             targetAbi: "10.11.11.0",
             sourceUrl: $source_url,
             checksum: $checksum,

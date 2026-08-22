@@ -30,7 +30,13 @@ jobs:
             echo "Tag must use vX.Y.Z format." >&2
             exit 2
           fi
+          notes_path=".github/release-notes/${GITHUB_REF_NAME}.md"
+          if [[ ! -s "$notes_path" ]]; then
+            echo "Release notes not found or empty: $notes_path" >&2
+            exit 2
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "notes_path=$notes_path" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies
         run: dotnet restore DoubanSync.sln
@@ -54,7 +60,8 @@ jobs:
             "$GITHUB_REF_NAME" \
             "$GITHUB_REPOSITORY" \
             "$zip_path" \
-            "artifacts/manifest.json"
+            "artifacts/manifest.json" \
+            "${{ steps.release.outputs.notes_path }}"
           unzip -t "$zip_path"
           jq empty artifacts/manifest.json
 
@@ -68,6 +75,6 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             "$zip_path" \
             "artifacts/manifest.json" \
-            --generate-notes \
+            --notes-file "${{ steps.release.outputs.notes_path }}" \
             --title "Douban Sync ${VERSION}" \
             --verify-tag
