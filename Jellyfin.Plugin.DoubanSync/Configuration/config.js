@@ -76,6 +76,10 @@ async function loadState(view) {
         view.querySelector('#markPrivate').checked = state.MarkPrivate;
         view.querySelector('#shareToBroadcast').checked = state.ShareToBroadcast;
         view.querySelector('#requestIntervalSeconds').value = state.RequestIntervalSeconds;
+        view.querySelector('#barkStatus').textContent = state.BarkConfigured ? '已配置。留空可保留当前地址。' : '尚未配置。';
+        view.querySelector('#discordWebhookStatus').textContent = state.DiscordWebhookConfigured ? '已配置。留空可保留当前地址。' : '尚未配置。';
+        view.querySelector('#clearBark').checked = false;
+        view.querySelector('#clearDiscordWebhook').checked = false;
 
         const previousUser = view.querySelector('#jellyfinUser').value;
         view.querySelector('#jellyfinUser').innerHTML = state.Users
@@ -127,6 +131,27 @@ export default function (view) {
         } catch (error) {
             Dashboard.hideLoadingMsg();
             await showRequestError(error, '保存设置失败。');
+        }
+        return false;
+    });
+
+    view.querySelector('#doubanSyncNotificationForm').addEventListener('submit', async event => {
+        event.preventDefault();
+        Dashboard.showLoadingMsg();
+        try {
+            await apiRequest('Notifications', 'POST', {
+                BarkUrl: view.querySelector('#barkUrl').value.trim(),
+                DiscordWebhookUrl: view.querySelector('#discordWebhookUrl').value.trim(),
+                ClearBark: view.querySelector('#clearBark').checked,
+                ClearDiscordWebhook: view.querySelector('#clearDiscordWebhook').checked
+            });
+            view.querySelector('#barkUrl').value = '';
+            view.querySelector('#discordWebhookUrl').value = '';
+            Dashboard.alert({ message: '通知设置已保存。' });
+            await loadState(view);
+        } catch (error) {
+            Dashboard.hideLoadingMsg();
+            await showRequestError(error, '保存通知设置失败。');
         }
         return false;
     });

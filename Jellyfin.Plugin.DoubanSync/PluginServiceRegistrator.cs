@@ -38,6 +38,11 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
             client.DefaultRequestHeaders.Referrer = new Uri("https://movie.douban.com/");
         });
 
+        serviceCollection.AddHttpClient<INotificationService, NotificationService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+
         serviceCollection.AddSingleton<IDoubanRequestGate, DoubanRequestGate>();
         serviceCollection.AddSingleton<IMovieResolver, MovieResolver>();
         serviceCollection.AddSingleton<ISyncQueue, SyncQueue>();

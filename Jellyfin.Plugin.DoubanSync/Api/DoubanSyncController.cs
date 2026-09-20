@@ -62,6 +62,8 @@ public sealed class DoubanSyncController : ControllerBase
             MarkPrivate = configuration.MarkPrivate,
             ShareToBroadcast = configuration.ShareToBroadcast,
             RequestIntervalSeconds = configuration.RequestIntervalSeconds,
+            BarkConfigured = !string.IsNullOrWhiteSpace(configuration.ProtectedBarkUrl),
+            DiscordWebhookConfigured = !string.IsNullOrWhiteSpace(configuration.ProtectedDiscordWebhookUrl),
             PendingCount = queue.PendingCount,
             Users = UserManagerCompatibility.GetUsers(_userManager)
                 .Select(
@@ -202,6 +204,70 @@ public sealed class DoubanSyncController : ControllerBase
     }
 
     /// <summary>
+    /// Stores or removes encrypted invalid-Cookie notification endpoints.
+    /// </summary>
+    /// <param name="request">Notification endpoint changes.</param>
+    /// <returns>No content.</returns>
+    [HttpPost("Notifications")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult SaveNotifications([FromBody] SaveNotificationsRequest request)
+    {
+        Uri? barkUrl = null;
+        Uri? discordWebhookUrl = null;
+        if (!string.IsNullOrWhiteSpace(request.BarkUrl)
+            && (!TryGetHttpEndpoint(request.BarkUrl, requireHttps: false, out barkUrl)
+                || barkUrl is null
+                || string.IsNullOrWhiteSpace(barkUrl.AbsolutePath.Trim('/'))))
+        {
+            return BadRequest(new ApiError("Bark 推送地址必须是完整的 HTTP 或 HTTPS URL。"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.DiscordWebhookUrl)
+            && (!TryGetHttpEndpoint(request.DiscordWebhookUrl, requireHttps: true, out discordWebhookUrl)
+                || discordWebhookUrl is null
+                || string.IsNullOrWhiteSpace(discordWebhookUrl.AbsolutePath.Trim('/'))))
+        {
+            return BadRequest(new ApiError("Discord Webhook 必须是完整的 HTTPS URL。"));
+        }
+
+        var configuration = Plugin.Instance.Configuration;
+        var changed = false;
+        if (request.ClearBark)
+        {
+            changed |= !string.IsNullOrEmpty(configuration.ProtectedBarkUrl);
+            configuration.ProtectedBarkUrl = string.Empty;
+        }
+        else if (barkUrl is not null)
+        {
+            configuration.ProtectedBarkUrl = _cookieProtector.Protect(barkUrl.AbsoluteUri);
+            changed = true;
+        }
+
+        if (request.ClearDiscordWebhook)
+        {
+            changed |= !string.IsNullOrEmpty(configuration.ProtectedDiscordWebhookUrl);
+            configuration.ProtectedDiscordWebhookUrl = string.Empty;
+        }
+        else if (discordWebhookUrl is not null)
+        {
+            configuration.ProtectedDiscordWebhookUrl = _cookieProtector.Protect(discordWebhookUrl.AbsoluteUri);
+            changed = true;
+        }
+
+        if (changed)
+        {
+            foreach (var account in configuration.Accounts)
+            {
+                account.InvalidCookieNotifiedForUpdateUtc = null;
+            }
+        }
+
+        Plugin.Instance.SaveConfiguration();
+        return NoContent();
+    }
+
+    /// <summary>
     /// Requeues failed records for one Jellyfin user.
     /// </summary>
     /// <param name="userId">Jellyfin user identifier.</param>
@@ -215,6 +281,23 @@ public sealed class DoubanSyncController : ControllerBase
     {
         await _queue.RequeueFailedAsync(userId, cancellationToken).ConfigureAwait(false);
         return NoContent();
+    }
+
+    private static bool TryGetHttpEndpoint(string value, bool requireHttps, out Uri? endpoint)
+    {
+        if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out endpoint)
+            || (!string.Equals(endpoint.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(endpoint.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            || (requireHttps
+                && !string.Equals(endpoint.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            || string.IsNullOrWhiteSpace(endpoint.Host)
+            || !string.IsNullOrEmpty(endpoint.UserInfo))
+        {
+            endpoint = null;
+            return false;
+        }
+
+        return true;
     }
 }
 
@@ -256,6 +339,32 @@ public sealed class SaveSettingsRequest
 }
 
 /// <summary>
+/// Notification endpoint update request. Blank endpoints preserve their current values.
+/// </summary>
+public sealed class SaveNotificationsRequest
+{
+    /// <summary>
+    /// Gets or sets a Bark push URL, including its device key.
+    /// </summary>
+    public string BarkUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a Discord webhook URL.
+    /// </summary>
+    public string DiscordWebhookUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the saved Bark endpoint should be removed.
+    /// </summary>
+    public bool ClearBark { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the saved Discord webhook should be removed.
+    /// </summary>
+    public bool ClearDiscordWebhook { get; set; }
+}
+
+/// <summary>
 /// Safe plugin state.
 /// </summary>
 public sealed class DoubanSyncState
@@ -279,6 +388,16 @@ public sealed class DoubanSyncState
     /// Gets or sets the minimum delay between Douban requests.
     /// </summary>
     public int RequestIntervalSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a Bark push URL is configured.
+    /// </summary>
+    public bool BarkConfigured { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a Discord webhook is configured.
+    /// </summary>
+    public bool DiscordWebhookConfigured { get; set; }
 
     /// <summary>
     /// Gets or sets configured Jellyfin users.

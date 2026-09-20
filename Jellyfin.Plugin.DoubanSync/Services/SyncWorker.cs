@@ -13,6 +13,7 @@ public sealed partial class SyncWorker : BackgroundService
     private readonly IMovieResolver _resolver;
     private readonly IDoubanClient _doubanClient;
     private readonly ICookieProtector _cookieProtector;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<SyncWorker> _logger;
 
     /// <summary>
@@ -22,18 +23,21 @@ public sealed partial class SyncWorker : BackgroundService
     /// <param name="resolver">Movie resolver.</param>
     /// <param name="doubanClient">Douban web client.</param>
     /// <param name="cookieProtector">Cookie protector.</param>
+    /// <param name="notificationService">Invalid-Cookie notification service.</param>
     /// <param name="logger">Logger.</param>
     public SyncWorker(
         ISyncQueue queue,
         IMovieResolver resolver,
         IDoubanClient doubanClient,
         ICookieProtector cookieProtector,
+        INotificationService notificationService,
         ILogger<SyncWorker> logger)
     {
         _queue = queue;
         _resolver = resolver;
         _doubanClient = doubanClient;
         _cookieProtector = cookieProtector;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -55,10 +59,11 @@ public sealed partial class SyncWorker : BackgroundService
 
     private async Task ProcessJobAsync(SyncJob job, CancellationToken cancellationToken)
     {
+        DoubanAccountConfiguration? account = null;
         try
         {
             var configuration = Plugin.Instance.Configuration;
-            var account = FindAccount(configuration, job.UserId)
+            account = FindAccount(configuration, job.UserId)
                 ?? throw new DoubanAuthenticationException("该 Jellyfin 用户尚未导入豆瓣 Cookie。");
             var cookie = _cookieProtector.Unprotect(account.ProtectedCookie);
             var doubanId = await _resolver.ResolveAsync(job, cookie, cancellationToken).ConfigureAwait(false);
@@ -85,6 +90,10 @@ public sealed partial class SyncWorker : BackgroundService
         catch (DoubanAuthenticationException ex)
         {
             await RecordFailureAsync(job, ex.Message, false, cancellationToken).ConfigureAwait(false);
+            if (account is not null)
+            {
+                await NotifyInvalidCookieOnceAsync(account, ex.Message, cancellationToken).ConfigureAwait(false);
+            }
         }
         catch (InvalidOperationException ex)
         {
@@ -110,6 +119,29 @@ public sealed partial class SyncWorker : BackgroundService
                 $"未预期错误：{ex.GetType().Name}。",
                 true,
                 cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task NotifyInvalidCookieOnceAsync(
+        DoubanAccountConfiguration account,
+        string failureMessage,
+        CancellationToken cancellationToken)
+    {
+        if (account.InvalidCookieNotifiedForUpdateUtc == account.CookieUpdatedAtUtc)
+        {
+            return;
+        }
+
+        var configuration = Plugin.Instance.Configuration;
+        var delivered = await _notificationService.NotifyCookieInvalidAsync(
+            configuration,
+            account,
+            failureMessage,
+            cancellationToken).ConfigureAwait(false);
+        if (delivered)
+        {
+            account.InvalidCookieNotifiedForUpdateUtc = account.CookieUpdatedAtUtc;
+            Plugin.Instance.SaveConfiguration();
         }
     }
 

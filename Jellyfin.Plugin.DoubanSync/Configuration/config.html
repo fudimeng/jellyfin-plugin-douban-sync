@@ -70,6 +70,46 @@
                     </button>
                 </form>
 
+                <form id="doubanSyncNotificationForm">
+                    <h2 style="margin-top:2em">Cookie 失效通知</h2>
+                    <p class="fieldDescription">
+                        当已保存的豆瓣 Cookie 被豆瓣拒绝时发送一次通知；重新导入 Cookie 后可再次通知。地址会在服务端加密保存且不会回显。
+                    </p>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="barkUrl">Bark 推送地址</label>
+                        <input id="barkUrl"
+                               type="password"
+                               is="emby-input"
+                               autocomplete="off"
+                               placeholder="https://api.day.app/设备密钥">
+                        <div id="barkStatus" class="fieldDescription">尚未配置。</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="clearBark" type="checkbox" is="emby-checkbox">
+                            <span>删除已保存的 Bark 地址</span>
+                        </label>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="discordWebhookUrl">Discord Webhook 地址</label>
+                        <input id="discordWebhookUrl"
+                               type="password"
+                               is="emby-input"
+                               autocomplete="off"
+                               placeholder="https://discord.com/api/webhooks/…">
+                        <div id="discordWebhookStatus" class="fieldDescription">尚未配置。</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="clearDiscordWebhook" type="checkbox" is="emby-checkbox">
+                            <span>删除已保存的 Discord Webhook</span>
+                        </label>
+                    </div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>保存通知设置</span>
+                    </button>
+                </form>
+
                 <form id="doubanSyncCookieForm">
                     <h2 style="margin-top:2em">Cookie 导入</h2>
                     <div class="selectContainer">

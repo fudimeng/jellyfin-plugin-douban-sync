@@ -28,6 +28,16 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     public int RequestIntervalSeconds { get; set; } = 5;
 
     /// <summary>
+    /// Gets or sets the encrypted Bark push URL.
+    /// </summary>
+    public string ProtectedBarkUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the encrypted Discord webhook URL.
+    /// </summary>
+    public string ProtectedDiscordWebhookUrl { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets encrypted Douban credentials mapped to Jellyfin users.
     /// </summary>
     public DoubanAccountConfiguration[] Accounts { get; set; } = [];
@@ -57,4 +67,9 @@ public sealed class DoubanAccountConfiguration
     /// Gets or sets when the cookie was last replaced.
     /// </summary>
     public DateTime CookieUpdatedAtUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Cookie update timestamp for which an invalidation notification was sent.
+    /// </summary>
+    public DateTime? InvalidCookieNotifiedForUpdateUtc { get; set; }
 }

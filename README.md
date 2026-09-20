@@ -22,6 +22,7 @@
 - 提交前检查豆瓣收藏状态，已经“看过”的条目不会被更新或重复广播。
 - 优先使用 `DoubanID`，缺失时通过 IMDb ID 精确查找并校验，最后才按标题与年份匹配。
 - Cookie 使用 ASP.NET Core Data Protection 加密保存，管理页面不会回显 Cookie。
+- Cookie 失效时可通过 Bark 和 Discord Webhook 通知；每版 Cookie 只提醒一次，避免重复推送。
 - 支持请求限速、持久化队列、失败重试和最近同步结果。
 
 ## 兼容性
@@ -72,6 +73,15 @@ Jellyfin 插件 API 在小版本之间也可能发生不兼容变化。其他 Je
 6. 选择 Jellyfin 用户，粘贴 Cookie 并保存。
 
 插件会先验证登录状态，验证成功后才加密保存 Cookie。
+
+## 配置 Cookie 失效通知
+
+在 Jellyfin 控制台 → 插件 → 豆瓣同步的“Cookie 失效通知”区域，可以录入：
+
+- Bark 完整推送地址，例如 `https://api.day.app/设备密钥`；也支持自建 Bark 服务的 HTTP/HTTPS 地址。
+- Discord 的 HTTPS Webhook 地址。
+
+通知地址与 Cookie 一样使用 ASP.NET Core Data Protection 加密保存且不会在管理页面回显。当豆瓣拒绝某个已保存的 Cookie 时，插件会向所有已配置渠道发送通知；同一版 Cookie 最多成功提醒一次，重新导入 Cookie 后会重新启用提醒。
 
 > [!WARNING]
 > Cookie 等同于豆瓣登录凭据。不要将 Cookie、Jellyfin 插件配置、`DoubanSyncKeys` 目录或包含这些内容的备份上传到 GitHub、Issue、聊天或截图中。怀疑泄露时，请立即退出豆瓣登录并重新登录。
@@ -164,7 +174,7 @@ GitHub Actions 会自动：
 - 当前不同步评分、标签、短评或取消“看过”状态。
 - 豆瓣网页接口变化后，Cookie 验证、搜索或写入可能失效。
 - 频繁请求可能触发豆瓣安全验证；串行限速也无法完全避免账号或出口 IP 被风控。
-- 数据保护密钥与加密配置同时泄露时，Cookie 仍可能被解密，请妥善保护 Jellyfin 配置和备份。
+- 数据保护密钥与加密配置同时泄露时，Cookie 和通知地址仍可能被解密，请妥善保护 Jellyfin 配置和备份。
 
 ## 许可证
 
