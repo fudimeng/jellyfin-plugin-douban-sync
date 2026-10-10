@@ -69,6 +69,57 @@ internal static class CookieHeader
         return token.Trim('"');
     }
 
+    /// <summary>
+    /// Applies rotated values from Set-Cookie response headers to an imported Cookie header.
+    /// Only cookies that were already present are updated, so unrelated response cookies are not accumulated.
+    /// </summary>
+    /// <param name="cookie">Normalized browser Cookie header.</param>
+    /// <param name="setCookieHeaders">Set-Cookie response header values.</param>
+    /// <returns>The normalized Cookie header with rotated values applied.</returns>
+    internal static string MergeResponseCookies(
+        string cookie,
+        IEnumerable<string> setCookieHeaders)
+    {
+        var parsed = Parse(Normalize(cookie));
+        foreach (var header in setCookieHeaders)
+        {
+            if (string.IsNullOrWhiteSpace(header))
+            {
+                continue;
+            }
+
+            var pairEnd = header.IndexOf(';', StringComparison.Ordinal);
+            var pair = pairEnd >= 0 ? header[..pairEnd] : header;
+            var separator = pair.IndexOf('=', StringComparison.Ordinal);
+            if (separator <= 0)
+            {
+                continue;
+            }
+
+            var name = pair[..separator].Trim();
+            if (!parsed.ContainsKey(name) || !IsValidCookieName(name))
+            {
+                continue;
+            }
+
+            var value = pair[(separator + 1)..].Trim();
+            var attributes = pairEnd >= 0 ? header[(pairEnd + 1)..] : string.Empty;
+            var expired = value.Length == 0
+                || attributes.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                    .Any(attribute => string.Equals(attribute, "Max-Age=0", StringComparison.OrdinalIgnoreCase));
+            if (expired)
+            {
+                parsed.Remove(name);
+            }
+            else
+            {
+                parsed[name] = value;
+            }
+        }
+
+        return Normalize(string.Join("; ", parsed.Select(value => $"{value.Key}={value.Value}")));
+    }
+
     private static Dictionary<string, string> Parse(string rawCookie)
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);

@@ -21,4 +21,27 @@ public sealed class CookieHeaderTests
     {
         Assert.Throws<ArgumentException>(() => CookieHeader.Normalize(cookie));
     }
+
+    [Fact]
+    public void MergeResponseCookies_UpdatesExistingTokensAndIgnoresUnrelatedCookies()
+    {
+        var merged = CookieHeader.MergeResponseCookies(
+            "bid=old-bid; dbcl2=old-session; ck=old-token",
+            [
+                "ck=new-token; Path=/; Secure",
+                "dbcl2=new-session; Domain=.douban.com; HttpOnly",
+                "unrelated=value; Path=/"
+            ]);
+
+        Assert.Equal("bid=old-bid; dbcl2=new-session; ck=new-token", merged);
+    }
+
+    [Fact]
+    public void MergeResponseCookies_RejectsRemovalOfRequiredToken()
+    {
+        Assert.Throws<ArgumentException>(
+            () => CookieHeader.MergeResponseCookies(
+                "bid=test; dbcl2=session; ck=token",
+                ["ck=; Max-Age=0; Path=/"]));
+    }
 }

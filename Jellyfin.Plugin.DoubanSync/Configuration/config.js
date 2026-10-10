@@ -39,7 +39,19 @@ function renderCredentialStatus(view) {
     const dateText = user.CookieUpdatedAtUtc
         ? new Date(user.CookieUpdatedAtUtc).toLocaleString()
         : '未知时间';
-    status.textContent = '已连接豆瓣账号：' + (user.DoubanDisplayName || '已登录') + '；更新于 ' + dateText + '。';
+    let refreshText = '';
+    if (user.TokenRefreshError && !user.NextTokenRefreshUtc) {
+        refreshText = '；自动刷新已暂停：' + user.TokenRefreshError;
+    } else if (user.TokenRefreshError) {
+        refreshText = '；最近刷新失败：' + user.TokenRefreshError;
+    } else if (user.LastTokenRefreshUtc) {
+        refreshText = '；最近刷新于 ' + new Date(user.LastTokenRefreshUtc).toLocaleString();
+    }
+    if (user.NextTokenRefreshUtc) {
+        refreshText += '；下次计划 ' + new Date(user.NextTokenRefreshUtc).toLocaleString();
+    }
+    status.textContent = '已连接豆瓣账号：' + (user.DoubanDisplayName || '已登录')
+        + '；Cookie 更新于 ' + dateText + refreshText + '。';
     deleteButton.classList.remove('hide');
 }
 
@@ -73,6 +85,7 @@ async function loadState(view) {
         const state = await apiRequest('State', 'GET');
         view.doubanSyncState = state;
         view.querySelector('#enabled').checked = state.Enabled;
+        view.querySelector('#dailyTokenRefreshEnabled').checked = state.DailyTokenRefreshEnabled;
         view.querySelector('#markPrivate').checked = state.MarkPrivate;
         view.querySelector('#shareToBroadcast').checked = state.ShareToBroadcast;
         view.querySelector('#requestIntervalSeconds').value = state.RequestIntervalSeconds;
@@ -122,6 +135,7 @@ export default function (view) {
         try {
             await apiRequest('Settings', 'POST', {
                 Enabled: view.querySelector('#enabled').checked,
+                DailyTokenRefreshEnabled: view.querySelector('#dailyTokenRefreshEnabled').checked,
                 MarkPrivate: view.querySelector('#markPrivate').checked,
                 ShareToBroadcast: view.querySelector('#shareToBroadcast').checked,
                 RequestIntervalSeconds: Number(view.querySelector('#requestIntervalSeconds').value)

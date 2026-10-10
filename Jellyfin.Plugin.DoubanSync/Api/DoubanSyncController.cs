@@ -1,5 +1,6 @@
 using System.Net.Mime;
 using Jellyfin.Plugin.DoubanSync.Configuration;
+using Jellyfin.Plugin.DoubanSync.ScheduledTasks;
 using Jellyfin.Plugin.DoubanSync.Services;
 using MediaBrowser.Common.Api;
 using MediaBrowser.Controller.Library;
@@ -62,6 +63,7 @@ public sealed class DoubanSyncController : ControllerBase
             MarkPrivate = configuration.MarkPrivate,
             ShareToBroadcast = configuration.ShareToBroadcast,
             RequestIntervalSeconds = configuration.RequestIntervalSeconds,
+            DailyTokenRefreshEnabled = configuration.DailyTokenRefreshEnabled,
             BarkConfigured = !string.IsNullOrWhiteSpace(configuration.ProtectedBarkUrl),
             DiscordWebhookConfigured = !string.IsNullOrWhiteSpace(configuration.ProtectedDiscordWebhookUrl),
             PendingCount = queue.PendingCount,
@@ -76,7 +78,10 @@ public sealed class DoubanSyncController : ControllerBase
                             Name = user.Username,
                             CookieConfigured = account is not null,
                             DoubanDisplayName = account?.DoubanDisplayName ?? string.Empty,
-                            CookieUpdatedAtUtc = account?.CookieUpdatedAtUtc
+                            CookieUpdatedAtUtc = account?.CookieUpdatedAtUtc,
+                            LastTokenRefreshUtc = account?.LastTokenRefreshUtc,
+                            NextTokenRefreshUtc = account?.NextTokenRefreshUtc,
+                            TokenRefreshError = account?.TokenRefreshError ?? string.Empty
                         };
                     })
                 .OrderBy(user => user.Name, StringComparer.CurrentCulture)
@@ -107,11 +112,11 @@ public sealed class DoubanSyncController : ControllerBase
         }
 
         string normalizedCookie;
-        string displayName;
+        DoubanSessionRefreshResult session;
         try
         {
             normalizedCookie = CookieHeader.Normalize(request.Cookie);
-            displayName = await _doubanClient.ValidateCookieAsync(
+            session = await _doubanClient.RefreshSessionAsync(
                 normalizedCookie,
                 cancellationToken).ConfigureAwait(false);
         }
@@ -140,13 +145,19 @@ public sealed class DoubanSyncController : ControllerBase
         var accounts = configuration.Accounts.ToList();
         accounts.RemoveAll(account => account.JellyfinUserId == userId);
         var updatedAt = DateTime.UtcNow;
+        var nextTokenRefreshUtc = RefreshDoubanSessionTask.CreateNextDailyRefreshUtc(
+            updatedAt,
+            TimeZoneInfo.Local,
+            Random.Shared.Next(24 * 60));
         accounts.Add(
             new DoubanAccountConfiguration
             {
                 JellyfinUserId = userId,
-                ProtectedCookie = _cookieProtector.Protect(normalizedCookie),
-                DoubanDisplayName = displayName,
-                CookieUpdatedAtUtc = updatedAt
+                ProtectedCookie = _cookieProtector.Protect(session.Cookie),
+                DoubanDisplayName = session.DisplayName,
+                CookieUpdatedAtUtc = updatedAt,
+                LastTokenRefreshUtc = updatedAt,
+                NextTokenRefreshUtc = nextTokenRefreshUtc
             });
         configuration.Accounts = accounts.ToArray();
         Plugin.Instance.SaveConfiguration();
@@ -157,8 +168,10 @@ public sealed class DoubanSyncController : ControllerBase
             Id = userId,
             Name = user.Username,
             CookieConfigured = true,
-            DoubanDisplayName = displayName,
-            CookieUpdatedAtUtc = updatedAt
+            DoubanDisplayName = session.DisplayName,
+            CookieUpdatedAtUtc = updatedAt,
+            LastTokenRefreshUtc = updatedAt,
+            NextTokenRefreshUtc = nextTokenRefreshUtc
         };
     }
 
@@ -199,6 +212,7 @@ public sealed class DoubanSyncController : ControllerBase
         configuration.MarkPrivate = request.MarkPrivate;
         configuration.ShareToBroadcast = request.ShareToBroadcast;
         configuration.RequestIntervalSeconds = request.RequestIntervalSeconds;
+        configuration.DailyTokenRefreshEnabled = request.DailyTokenRefreshEnabled;
         Plugin.Instance.SaveConfiguration();
         return NoContent();
     }
@@ -336,6 +350,11 @@ public sealed class SaveSettingsRequest
     /// Gets or sets the minimum delay between Douban requests.
     /// </summary>
     public int RequestIntervalSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the Douban session is refreshed daily at a random time.
+    /// </summary>
+    public bool DailyTokenRefreshEnabled { get; set; }
 }
 
 /// <summary>
@@ -388,6 +407,11 @@ public sealed class DoubanSyncState
     /// Gets or sets the minimum delay between Douban requests.
     /// </summary>
     public int RequestIntervalSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the Douban session is refreshed daily at a random time.
+    /// </summary>
+    public bool DailyTokenRefreshEnabled { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether a Bark push URL is configured.
@@ -444,6 +468,21 @@ public sealed class DoubanUserState
     /// Gets or sets when the Cookie was replaced.
     /// </summary>
     public DateTime? CookieUpdatedAtUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the most recent successful automatic session refresh time.
+    /// </summary>
+    public DateTime? LastTokenRefreshUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the next randomly scheduled session refresh time.
+    /// </summary>
+    public DateTime? NextTokenRefreshUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the last session refresh error.
+    /// </summary>
+    public string TokenRefreshError { get; set; } = string.Empty;
 }
 
 /// <summary>
