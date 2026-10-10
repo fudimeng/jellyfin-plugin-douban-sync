@@ -28,6 +28,11 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     public int RequestIntervalSeconds { get; set; } = 5;
 
     /// <summary>
+    /// Gets or sets a value indicating whether the Douban session is refreshed once per day at a random time.
+    /// </summary>
+    public bool DailyTokenRefreshEnabled { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets the encrypted Bark push URL.
     /// </summary>
     public string ProtectedBarkUrl { get; set; } = string.Empty;
@@ -72,4 +77,19 @@ public sealed class DoubanAccountConfiguration
     /// Gets or sets the Cookie update timestamp for which an invalidation notification was sent.
     /// </summary>
     public DateTime? InvalidCookieNotifiedForUpdateUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the most recent successful session refresh time.
+    /// </summary>
+    public DateTime? LastTokenRefreshUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the next randomly scheduled session refresh time.
+    /// </summary>
+    public DateTime? NextTokenRefreshUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the last session refresh failure, or an empty string after success.
+    /// </summary>
+    public string TokenRefreshError { get; set; } = string.Empty;
 }

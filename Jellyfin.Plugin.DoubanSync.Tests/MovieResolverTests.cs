@@ -194,6 +194,11 @@ public sealed class MovieResolverTests
         public Task<string> ValidateCookieAsync(string cookie, CancellationToken cancellationToken)
             => Task.FromResult("tester");
 
+        public Task<DoubanSessionRefreshResult> RefreshSessionAsync(
+            string cookie,
+            CancellationToken cancellationToken)
+            => Task.FromResult(new DoubanSessionRefreshResult(cookie, "tester"));
+
         public Task<IReadOnlyList<DoubanMovieCandidate>> SearchMoviesAsync(
             string query,
             string cookie,

@@ -35,7 +35,7 @@
             <div class="content-primary doubanSyncContent">
                 <h1>豆瓣同步</h1>
                 <p class="fieldDescription">
-                    插件每 30 分钟扫描一次 Jellyfin 已观看电影，以及全部普通集均已看完的电视剧或动画季，再提交豆瓣“看过”。特别篇不计入季完成度。Cookie 仅在服务端接收并加密保存，页面不会回显。
+                    插件每 30 分钟扫描一次 Jellyfin 已观看电影，以及全部普通集均已看完的电视剧或动画季，再提交豆瓣“看过”。特别篇不计入季完成度。Cookie 仅在服务端接收、自动刷新并加密保存，页面不会回显。
                 </p>
 
                 <form id="doubanSyncSettingsForm">
@@ -46,6 +46,15 @@
                             <span>启用每 30 分钟同步</span>
                         </label>
                         <div class="fieldDescription checkboxFieldDescription">关闭后计划任务仍保留，但扫描时不会加入任何影视条目。</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="dailyTokenRefreshEnabled" type="checkbox" is="emby-checkbox">
+                            <span>每天随机刷新一次豆瓣登录状态</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">
+                            每天随机选择时间发送一次轻量登录请求，并保存豆瓣返回的 Cookie 更新。登录失效时会暂停，重新导入 Cookie 后恢复。
+                        </div>
                     </div>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">

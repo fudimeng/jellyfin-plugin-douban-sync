@@ -13,6 +13,16 @@ namespace Jellyfin.Plugin.DoubanSync.Services;
 public interface IDoubanClient
 {
     /// <summary>
+    /// Validates and refreshes a browser Cookie against the signed-in user's page.
+    /// </summary>
+    /// <param name="cookie">Normalized browser Cookie header.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Refreshed Cookie and Douban display name.</returns>
+    Task<DoubanSessionRefreshResult> RefreshSessionAsync(
+        string cookie,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Validates a browser Cookie header against the signed-in user's page.
     /// </summary>
     /// <param name="cookie">Normalized Cookie header.</param>
@@ -135,6 +145,15 @@ public sealed partial class DoubanClient : IDoubanClient
     /// <inheritdoc />
     public async Task<string> ValidateCookieAsync(string cookie, CancellationToken cancellationToken)
     {
+        var result = await RefreshSessionAsync(cookie, cancellationToken).ConfigureAwait(false);
+        return result.DisplayName;
+    }
+
+    /// <inheritdoc />
+    public async Task<DoubanSessionRefreshResult> RefreshSessionAsync(
+        string cookie,
+        CancellationToken cancellationToken)
+    {
         await _requestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         using var request = CreateRequest(HttpMethod.Get, MineUri, cookie);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -151,9 +170,24 @@ public sealed partial class DoubanClient : IDoubanClient
         }
 
         var match = ProfileNameRegex().Match(body);
-        return match.Success
+        var displayName = match.Success
             ? WebUtility.HtmlDecode(StripTagsRegex().Replace(match.Groups[1].Value, string.Empty)).Trim()
             : "已登录";
+        var responseCookies = response.Headers.TryGetValues("Set-Cookie", out var values)
+            ? values
+            : [];
+        try
+        {
+            return new DoubanSessionRefreshResult(
+                CookieHeader.MergeResponseCookies(cookie, responseCookies),
+                displayName);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new DoubanAuthenticationException(
+                "豆瓣刷新响应使登录 Cookie 失效，请重新导入 Cookie。",
+                ex);
+        }
     }
 
     /// <inheritdoc />
@@ -475,6 +509,13 @@ public sealed class DoubanMovieCandidate
 }
 
 /// <summary>
+/// Refreshed Douban session state.
+/// </summary>
+/// <param name="Cookie">Normalized Cookie after applying rotated values.</param>
+/// <param name="DisplayName">Signed-in Douban display name.</param>
+public sealed record DoubanSessionRefreshResult(string Cookie, string DisplayName);
+
+/// <summary>
 /// Result of checking and applying one Douban watched mark.
 /// </summary>
 public enum DoubanMarkResult
@@ -501,6 +542,16 @@ public sealed class DoubanAuthenticationException : Exception
     /// <param name="message">Error message.</param>
     public DoubanAuthenticationException(string message)
         : base(message)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DoubanAuthenticationException"/> class.
+    /// </summary>
+    /// <param name="message">Error message.</param>
+    /// <param name="innerException">Underlying error.</param>
+    public DoubanAuthenticationException(string message, Exception innerException)
+        : base(message, innerException)
     {
     }
 }
