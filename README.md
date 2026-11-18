@@ -3,7 +3,7 @@
 [![Release](https://img.shields.io/github/v/release/fudimeng/jellyfin-plugin-douban-sync)](https://github.com/fudimeng/jellyfin-plugin-douban-sync/releases)
 [![Release workflow](https://github.com/fudimeng/jellyfin-plugin-douban-sync/actions/workflows/release.yml/badge.svg)](https://github.com/fudimeng/jellyfin-plugin-douban-sync/actions/workflows/release.yml)
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
-[![Jellyfin 12.4](https://img.shields.io/badge/Jellyfin-12.4-00A4DC.svg)](https://jellyfin.org/)
+[![Jellyfin 12.0+](https://img.shields.io/badge/Jellyfin-12.0%2B-00A4DC.svg)](https://jellyfin.org/)
 
 将 Jellyfin 中已观看的电影，以及整季看完的电视剧和动画同步为豆瓣“看过”。
 
@@ -30,10 +30,11 @@
 
 | 插件版本 | Jellyfin | 运行时 |
 |---|---|---|
-| 0.2.0 | 12.4 | .NET 10 |
-| 0.1.x | 10.11.11 | .NET 9 |
+| 0.2.1 | 12.0 及以上 | .NET 10 |
+| 0.2.0 | 12.4 及以上 | .NET 10 |
+| 0.1.9 | 10.11.11 | .NET 9 |
 
-Jellyfin 插件 API 在小版本之间也可能发生不兼容变化。其他 Jellyfin 版本应使用对应依赖重新构建，不建议强行安装。
+插件仓库按 Jellyfin 版本选择可安装的插件包。Jellyfin 12.0 和 12.4 已通过加载验证，后续大版本的插件 API 兼容性以实测为准。
 
 ## 安装
 
@@ -162,8 +163,8 @@ dotnet msbuild package.proj -t:Package
 更新版本号，并在 `.github/release-notes/` 中添加与标签同名的中文版本说明后，推送符合 `vX.Y.Z` 格式的标签：
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
 
 GitHub Actions 会自动：

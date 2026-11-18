@@ -2,7 +2,7 @@
   <Import Project="Directory.Build.props" />
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
-    <PackageVersion Condition="'$(PackageVersion)' == ''">0.2.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">0.2.1</PackageVersion>
     <PluginVersion Condition="'$(PluginVersion)' == ''">$(PackageVersion).0</PluginVersion>
     <PackageDirectory>$(MSBuildThisFileDirectory)artifacts</PackageDirectory>
     <StagingDirectory>$(PackageDirectory)/staging</StagingDirectory>

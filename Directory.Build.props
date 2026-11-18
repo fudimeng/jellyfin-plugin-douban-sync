@@ -1,11 +1,11 @@
 <Project>
   <PropertyGroup>
-    <Version>0.2.0.0</Version>
-    <AssemblyVersion>0.2.0.0</AssemblyVersion>
-    <FileVersion>0.2.0.0</FileVersion>
+    <Version>0.2.1.0</Version>
+    <AssemblyVersion>0.2.1.0</AssemblyVersion>
+    <FileVersion>0.2.1.0</FileVersion>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <TargetFramework>net10.0</TargetFramework>
-    <JellyfinVersion Condition="'$(JellyfinVersion)' == ''">12.4.0</JellyfinVersion>
+    <JellyfinVersion Condition="'$(JellyfinVersion)' == ''">12.0.0</JellyfinVersion>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 </Project>
