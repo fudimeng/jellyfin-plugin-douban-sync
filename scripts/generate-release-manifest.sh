@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [[ $# -ne 6 ]]; then
-    echo "Usage: $0 <version> <tag> <repository> <zip-path> <output-path> <release-notes-path>" >&2
+if [[ $# -lt 6 || $# -gt 7 ]]; then
+    echo "Usage: $0 <version> <tag> <repository> <zip-path> <output-path> <release-notes-path> [previous-manifest]" >&2
     exit 2
 fi
 
@@ -13,6 +13,7 @@ repository=$3
 zip_path=$4
 output_path=$5
 release_notes_path=$6
+previous_manifest=${7:-/dev/null}
 
 if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo "Version must use X.Y.Z format." >&2
@@ -40,7 +41,12 @@ if [[ ! -s $release_notes_path ]]; then
 fi
 
 zip_name=$(basename "$zip_path")
-checksum=$(md5sum "$zip_path" | awk '{print $1}')
+if [[ ! $zip_name =~ ^douban-sync_([0-9]+\.[0-9]+\.[0-9]+)_jellyfin-([0-9]+\.[0-9]+\.[0-9]+)\.zip$ || ${BASH_REMATCH[1]} != "$version" ]]; then
+    echo "Plugin package must match the release version and identify the Jellyfin version." >&2
+    exit 2
+fi
+target_abi="${BASH_REMATCH[2]}.0"
+checksum=$(openssl dgst -md5 -r "$zip_path" | awk '{print $1}')
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 source_url="https://github.com/${repository}/releases/download/${tag}/${zip_name}"
 changelog=$(<"$release_notes_path")
@@ -53,6 +59,8 @@ jq -n \
     --arg version "${version}.0" \
     --arg source_url "$source_url" \
     --arg checksum "$checksum" \
+    --arg target_abi "$target_abi" \
+    --slurpfile previous "$previous_manifest" \
     --arg timestamp "$timestamp" \
     --arg changelog "$changelog" \
     '[
@@ -63,16 +71,17 @@ jq -n \
         overview: "同步 Jellyfin 已观看电影和完整剧集季到豆瓣",
         owner: "doubanSyn contributors",
         category: "General",
-        versions: [
+        versions: ([
           {
             version: $version,
             changelog: $changelog,
-            targetAbi: "10.11.11.0",
+            targetAbi: $target_abi,
             sourceUrl: $source_url,
             checksum: $checksum,
             timestamp: $timestamp
           }
-        ]
+        ] + [ $previous[0][]? | select(.guid == "58f521f4-ff96-4ac4-b6ac-14fdc730659a")
+              | .versions[] | select(.version != $version) ])
       }
     ]' > "$temporary_path"
 

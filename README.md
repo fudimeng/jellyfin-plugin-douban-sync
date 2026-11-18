@@ -3,7 +3,7 @@
 [![Release](https://img.shields.io/github/v/release/fudimeng/jellyfin-plugin-douban-sync)](https://github.com/fudimeng/jellyfin-plugin-douban-sync/releases)
 [![Release workflow](https://github.com/fudimeng/jellyfin-plugin-douban-sync/actions/workflows/release.yml/badge.svg)](https://github.com/fudimeng/jellyfin-plugin-douban-sync/actions/workflows/release.yml)
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
-[![Jellyfin 10.11.11](https://img.shields.io/badge/Jellyfin-10.11.11-00A4DC.svg)](https://jellyfin.org/)
+[![Jellyfin 12.4](https://img.shields.io/badge/Jellyfin-12.4-00A4DC.svg)](https://jellyfin.org/)
 
 将 Jellyfin 中已观看的电影，以及整季看完的电视剧和动画同步为豆瓣“看过”。
 
@@ -30,6 +30,7 @@
 
 | 插件版本 | Jellyfin | 运行时 |
 |---|---|---|
+| 0.2.0 | 12.4 | .NET 10 |
 | 0.1.x | 10.11.11 | .NET 9 |
 
 Jellyfin 插件 API 在小版本之间也可能发生不兼容变化。其他 Jellyfin 版本应使用对应依赖重新构建，不建议强行安装。
@@ -146,7 +147,7 @@ Jellyfin 中的电影被标记为已观看后，会在下一个扫描周期加�
 
 ## 从源码构建
 
-需要 .NET 9 SDK：
+需要 .NET 10 SDK：
 
 ```bash
 dotnet restore DoubanSync.sln
@@ -161,8 +162,8 @@ dotnet msbuild package.proj -t:Package
 更新版本号，并在 `.github/release-notes/` 中添加与标签同名的中文版本说明后，推送符合 `vX.Y.Z` 格式的标签：
 
 ```bash
-git tag v0.1.9
-git push origin v0.1.9
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 GitHub Actions 会自动：

@@ -81,7 +81,7 @@ public sealed partial class SyncExistingWatchedTask : IScheduledTask
         var configuredUserIds = Plugin.Instance.Configuration.Accounts
             .Select(account => account.JellyfinUserId)
             .ToHashSet();
-        var users = UserManagerCompatibility.GetUsers(_userManager)
+        var users = _userManager.GetUsers()
             .Where(user => configuredUserIds.Contains(user.Id))
             .ToArray();
         if (users.Length == 0)
