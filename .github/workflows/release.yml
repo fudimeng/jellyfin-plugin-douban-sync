@@ -19,7 +19,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "9.0.x"
+          dotnet-version: "10.0.x"
 
       - name: Read and validate version
         id: release
@@ -52,16 +52,26 @@ jobs:
           -p:PluginVersion=${{ steps.release.outputs.version }}.0
 
       - name: Generate Jellyfin repository manifest
+        id: manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          zip_path="artifacts/douban-sync_${{ steps.release.outputs.version }}_jellyfin-10.11.11.zip"
+          shopt -s nullglob
+          packages=(artifacts/douban-sync_${{ steps.release.outputs.version }}_jellyfin-*.zip)
+          [[ ${#packages[@]} -eq 1 ]]
+          zip_path="${packages[0]}"
+          previous_tag=$(gh release view --json tagName --jq .tagName)
+          gh release download "$previous_tag" --pattern manifest.json --output artifacts/previous-manifest.json
           bash scripts/generate-release-manifest.sh \
             "${{ steps.release.outputs.version }}" \
             "$GITHUB_REF_NAME" \
             "$GITHUB_REPOSITORY" \
             "$zip_path" \
             "artifacts/manifest.json" \
-            "${{ steps.release.outputs.notes_path }}"
+            "${{ steps.release.outputs.notes_path }}" \
+            artifacts/previous-manifest.json
+          echo "zip_path=$zip_path" >> "$GITHUB_OUTPUT"
           unzip -t "$zip_path"
           jq empty artifacts/manifest.json
 
@@ -69,11 +79,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.release.outputs.version }}
+          ZIP_PATH: ${{ steps.manifest.outputs.zip_path }}
         shell: bash
         run: |
-          zip_path="artifacts/douban-sync_${VERSION}_jellyfin-10.11.11.zip"
           gh release create "$GITHUB_REF_NAME" \
-            "$zip_path" \
+            "$ZIP_PATH" \
             "artifacts/manifest.json" \
             --notes-file "${{ steps.release.outputs.notes_path }}" \
             --title "Douban Sync ${VERSION}" \

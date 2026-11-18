@@ -67,7 +67,7 @@ public sealed class DoubanSyncController : ControllerBase
             BarkConfigured = !string.IsNullOrWhiteSpace(configuration.ProtectedBarkUrl),
             DiscordWebhookConfigured = !string.IsNullOrWhiteSpace(configuration.ProtectedDiscordWebhookUrl),
             PendingCount = queue.PendingCount,
-            Users = UserManagerCompatibility.GetUsers(_userManager)
+            Users = _userManager.GetUsers()
                 .Select(
                     user =>
                     {

@@ -1,13 +1,13 @@
 <Project>
+  <Import Project="Directory.Build.props" />
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
-    <PackageVersion Condition="'$(PackageVersion)' == ''">0.1.9</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">0.2.0</PackageVersion>
     <PluginVersion Condition="'$(PluginVersion)' == ''">$(PackageVersion).0</PluginVersion>
-    <JellyfinVersion>10.11.11</JellyfinVersion>
     <PackageDirectory>$(MSBuildThisFileDirectory)artifacts</PackageDirectory>
     <StagingDirectory>$(PackageDirectory)/staging</StagingDirectory>
     <PackagePath>$(PackageDirectory)/douban-sync_$(PackageVersion)_jellyfin-$(JellyfinVersion).zip</PackagePath>
-    <PluginOutput>$(MSBuildThisFileDirectory)Jellyfin.Plugin.DoubanSync/bin/$(Configuration)/net9.0/Jellyfin.Plugin.DoubanSync.dll</PluginOutput>
+    <PluginOutput>$(MSBuildThisFileDirectory)Jellyfin.Plugin.DoubanSync/bin/$(Configuration)/$(TargetFramework)/Jellyfin.Plugin.DoubanSync.dll</PluginOutput>
   </PropertyGroup>
 
   <Target Name="Package">
